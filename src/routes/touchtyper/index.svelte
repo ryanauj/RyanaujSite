@@ -1,4 +1,5 @@
 <script>
+  import Navbar from '../../components/navbar.svelte'
   import { onMount, onDestroy } from 'svelte'
 
   const getRandomValInRange = (min, max) => {
@@ -33,6 +34,7 @@
   const CharRange = {
     [ALPHANUM]: {
       text: 'All Alphanumeric Keys [a-z] and [0-9]',
+      radioText: '[a-z0-9]',
       getRandomKeyCode: () => {
         const randomBaseVal = getRandomValInRange(0, 35)
         const digitKeyVal = digitRangeStart + randomBaseVal
@@ -42,32 +44,58 @@
     },
     [ALPHA]: {
       text: 'All Alpha Keys [a-z]',
+      radioText: '[a-z]',
       getRandomKeyCode: () => alphaRangeStart + getRandomValInRange(0, 25)
     },
     [NUM]: {
       text: 'All Numeric Keys [0-9]',
+      radioText: '[0-9]',
       getRandomKeyCode: () => digitRangeStart + getRandomValInRange(0, 9)
     }
   }
 
   let randomKey = ''
   let startTime = null
-  let elapsedTime = null
-  let numMisses = 0
-  let makesInRow = 0
-  let averageMakeTime = Infinity
   let currentCharRange = ALPHANUM
 
-  const setCurrentCharRange = (charRange) => {
-    currentCharRange = charRange
-  }
+  let elapsedTime = 0
+  let numMisses = 0
+  let makesInRow = 0
+  let maxMakesInRow = 0
+  let total = 0
+  let averageMakeTime = Infinity
+
+  let charCounts = {}
 
   const resetTimer = () => {
     startTime = Date.now()
   }
 
+  const reset = () => {
+    elapsedTime = 0
+    numMisses = 0
+    makesInRow = 0
+    maxMakesInRow = 0
+    total = 0
+    averageMakeTime = Infinity
+    charCounts = {}
+    setRandomKey()
+  }
+
   const setRandomKey = () => {
-    randomKey = CharRange[currentCharRange].getRandomKeyCode()
+    let newKey = randomKey
+    while (newKey === randomKey) {
+      newKey = CharRange[currentCharRange].getRandomKeyCode()
+    }
+    randomKey = newKey 
+
+    if (!(randomKey in charCounts)) {
+      charCounts[randomKey] = {
+        makes: 0,
+        misses: 0
+      }
+    }
+
     resetTimer()
   }
 
@@ -79,48 +107,125 @@
   onMount(() => {
     document.onkeydown = function (event) {
       let char = (typeof event !== 'undefined') ? event.keyCode : event.which
+
       if (char == randomKey) {
         stopTimer()
+        charCounts[randomKey].makes += 1
         setRandomKey()
         numMisses = 0
         makesInRow += 1
+        total += 1
 
-        if (makesInRow === 1) {
+        maxMakesInRow = Math.max(makesInRow, maxMakesInRow)
+
+        if (total === 1) {
           averageMakeTime = elapsedTime
         }
         else {
-          const previousAverageTotal = averageMakeTime * (makesInRow-1)
+          const previousAverageTotal = averageMakeTime * (total-1)
           const averageTotal = previousAverageTotal + elapsedTime
-          averageMakeTime = averageTotal / makesInRow
+          averageMakeTime = averageTotal / total
         }
       }
       else {
         makesInRow = 0
         numMisses += 1
-        averageMakeTime = Infinity
+        charCounts[randomKey].misses += 1
       }
     }
   })
+  // Current makes in row
+  // Max makes in row
+  // Average make time overall
+
+  // Num makes and num misses per character
+  // Average make time per character
+  // Average attempts per character (makes / total attempts per character)
 </script>
 
-<h1>Touch Typer</h1>
-<p>{CharRange[currentCharRange].text}</p>
-<button on:click={setRandomKey}>Random Key</button>
-<button on:click={() => setCurrentCharRange(ALPHANUM)}>
-  [a-z0-9]
-</button>
-<button on:click={() => setCurrentCharRange(ALPHA)}>
-  [a-z]
-</button>
-<button on:click={() => setCurrentCharRange(NUM)}>
-  [0-9]
-</button>
-<p>{String.fromCharCode(randomKey)}</p>
-{#if randomKey != ''}
-  <p>{numMisses}</p>
-  <p>{makesInRow}</p>
-  <p>{roundToDecimalPlaces(averageMakeTime, 3)}</p>
-{/if}
-{#if elapsedTime !== null}
-  <p>{roundToDecimalPlaces(elapsedTime, 3)}</p>
-{/if}
+<Navbar/>
+<div class="w3-container">
+  <h1>Touch Typer</h1>
+
+  <p>{CharRange[currentCharRange].text}</p>
+
+  <button class="w3-button w3-black" on:click={reset}>
+    {#if randomKey === ''}
+      Random Key
+    {:else}
+      Reset
+    {/if}
+  </button>
+
+  <div>
+    {#each Object.keys(CharRange) as charRangeKey}
+      <label>
+        <input class="w3-radio" type=radio bind:group={currentCharRange} name="charRange" value={charRangeKey}/>
+        {CharRange[charRangeKey].radioText}
+      </label>
+    {/each}
+  </div>
+
+  <p id="target">{String.fromCharCode(randomKey)}</p>
+
+  {#if randomKey != ''}
+    <table class="w3-table-all w3-large">
+      <tr>
+        <th>Current Num Misses</th>
+        <th>Makes In Row</th>
+        <th>Last Char Elapsed Time</th>
+      </tr>
+      <tr>
+        <td>{numMisses}</td>
+        <td>{makesInRow}</td>
+        <td>{roundToDecimalPlaces(elapsedTime, 3)}</td>
+      </tr>
+    </table>
+    <table class="w3-table-all w3-large">
+      <tr>
+        <th>Total</th>
+        <th>Max Makes In Row</th>
+        <th>Average Make Time</th>
+      </tr>
+      <tr>
+        <td>{total}</td>
+        <td>{maxMakesInRow}</td>
+        <td>{roundToDecimalPlaces(averageMakeTime, 3)}</td>
+      </tr>
+    </table>
+    <table id="char_counts" class="w3-table-all w3-large">
+      <tr>
+        <th>Character</th>
+        <th>Makes</th>
+        <th>Misses</th>
+      </tr>
+      {#each Object.keys(charCounts) as char }
+        <tr>
+          <td>{String.fromCharCode(char)}</td>
+          <td>{charCounts[char].makes}</td>
+          <td>{charCounts[char].misses}</td>
+        </tr>
+      {/each}
+    </table>
+  {/if}
+</div>
+
+<style>
+  label {
+    padding-right: 16px;
+  }
+  td, th {
+    max-width: 35px;
+  }
+  table {
+    margin-bottom: 10px;
+  }
+  #char_counts {
+    max-width: 40ch;
+  }
+  #target {
+    font-size: 20px;
+    font-weight: bold;
+    color: orange;
+  }
+</style>
