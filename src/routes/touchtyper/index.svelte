@@ -59,11 +59,12 @@
   let currentCharRange = ALPHANUM
 
   let elapsedTime = 0
-  let numMisses = 0
+  let missesInRow = 0
   let makesInRow = 0
   let maxMakesInRow = 0
-  let total = 0
-  let averageMakeTime = Infinity
+  let totalMakes = 0
+  let totalMisses = 0
+  let averageTime = Infinity
 
   let charCounts = {}
 
@@ -73,11 +74,12 @@
 
   const reset = () => {
     elapsedTime = 0
-    numMisses = 0
+    missesInRow = 0
     makesInRow = 0
     maxMakesInRow = 0
-    total = 0
-    averageMakeTime = Infinity
+    totalMakes = 0
+    totalMisses = 0
+    averageTime = Infinity
     charCounts = {}
     setRandomKey()
   }
@@ -92,7 +94,8 @@
     if (!(randomKey in charCounts)) {
       charCounts[randomKey] = {
         makes: 0,
-        misses: 0
+        misses: 0,
+        averageTime: Infinity
       }
     }
 
@@ -111,25 +114,37 @@
       if (char == randomKey) {
         stopTimer()
         charCounts[randomKey].makes += 1
-        setRandomKey()
-        numMisses = 0
+        missesInRow = 0
         makesInRow += 1
-        total += 1
+        totalMakes += 1
 
         maxMakesInRow = Math.max(makesInRow, maxMakesInRow)
 
-        if (total === 1) {
-          averageMakeTime = elapsedTime
+        const { makes: charMakes, averageTime: charAverageTime } = charCounts[randomKey]
+
+        if (totalMakes === 1) {
+          averageTime = elapsedTime
         }
         else {
-          const previousAverageTotal = averageMakeTime * (total-1)
+          const previousAverageTotal = averageTime * (totalMakes-1)
           const averageTotal = previousAverageTotal + elapsedTime
-          averageMakeTime = averageTotal / total
+          averageTime = averageTotal / totalMakes
         }
+
+        if (charCounts[randomKey].makes === 1) {
+          charCounts[randomKey].averageTime = elapsedTime
+        }
+        else {
+          const previousAverageTotal = charAverageTime * (charMakes-1)
+          const averageTotal = previousAverageTotal + elapsedTime
+          charCounts[randomKey].averageTime = averageTotal / charMakes
+        }
+        setRandomKey()
       }
       else {
         makesInRow = 0
-        numMisses += 1
+        missesInRow += 1
+        totalMisses += 1
         charCounts[randomKey].misses += 1
       }
     }
@@ -171,26 +186,32 @@
   {#if randomKey != ''}
     <table class="w3-table-all w3-large">
       <tr>
-        <th>Current Num Misses</th>
+        <th>Misses In Row</th>
         <th>Makes In Row</th>
         <th>Last Char Elapsed Time</th>
       </tr>
       <tr>
-        <td>{numMisses}</td>
+        <td>{missesInRow}</td>
         <td>{makesInRow}</td>
         <td>{roundToDecimalPlaces(elapsedTime, 3)}</td>
       </tr>
     </table>
     <table class="w3-table-all w3-large">
       <tr>
-        <th>Total</th>
+        <th>Total Makes</th>
+        <th>Total Misses</th>
         <th>Max Makes In Row</th>
-        <th>Average Make Time</th>
+        <th>Average Time</th>
       </tr>
       <tr>
-        <td>{total}</td>
+        <td>{totalMakes}</td>
+        <td>{totalMisses}</td>
         <td>{maxMakesInRow}</td>
-        <td>{roundToDecimalPlaces(averageMakeTime, 3)}</td>
+        <td>
+          {#if averageTime !== Infinity}
+            {roundToDecimalPlaces(averageTime, 3)}
+          {/if}
+        </td>
       </tr>
     </table>
     <table id="char_counts" class="w3-table-all w3-large">
@@ -198,12 +219,18 @@
         <th>Character</th>
         <th>Makes</th>
         <th>Misses</th>
+        <th>Average Time</th>
       </tr>
       {#each Object.keys(charCounts) as char }
         <tr>
           <td>{String.fromCharCode(char)}</td>
           <td>{charCounts[char].makes}</td>
           <td>{charCounts[char].misses}</td>
+          <td>
+            {#if charCounts[char].averageTime !== Infinity}
+              {roundToDecimalPlaces(charCounts[char].averageTime, 3)}
+            {/if}
+          </td>
         </tr>
       {/each}
     </table>
