@@ -166,7 +166,7 @@
 
   <button class="w3-button w3-black" on:click={reset}>
     {#if randomKey === ''}
-      Random Key
+      Start
     {:else}
       Reset
     {/if}
