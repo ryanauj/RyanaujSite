@@ -160,7 +160,7 @@
 
 <Navbar/>
 <div class="w3-container">
-  <h1>Touch Typer</h1>
+  <h1 class="header">Touch Typer</h1>
 
   <p>{CharRange[currentCharRange].text}</p>
 
@@ -247,12 +247,18 @@
   table {
     margin-bottom: 10px;
   }
+  .header {
+    text-decoration: underline;
+    text-decoration-color: darkcyan;
+  }
   #char_counts {
     max-width: 40ch;
   }
   #target {
-    font-size: 20px;
+    font-size: 60px;
     font-weight: bold;
-    color: orange;
+    color: darkcyan;
+    left: 50%;
+    text-align: center;
   }
 </style>
