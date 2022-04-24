@@ -1,8 +1,3 @@
-<script>
-  import Navbar from '../components/navbar.svelte'
-</script>
-
-<Navbar/>
 <div class="w3-container">
   <h1>Welcome to Ryanauj Site</h1>
   <hr>
