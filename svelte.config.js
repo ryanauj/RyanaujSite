@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-auto';
 import preprocess from 'svelte-preprocess';
 
 const dev = process.env.NODE_ENV = 'development'
@@ -8,15 +8,8 @@ const config = {
 	// Consult https://github.com/sveltejs/svelte-preprocess
 	// for more information about preprocessors
   preprocess: preprocess(),
-
-  // https://github.com/sveltejs/kit/tree/master/packages/adapter-static
 	kit: {
-		adapter: adapter({
-      pages: 'build',
-      assets: 'build',
-      fallback: null,
-      precompress: false
-    })
+		adapter: adapter()
 	}
 };
 
