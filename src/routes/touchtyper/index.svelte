@@ -262,5 +262,3 @@
     text-align: center;
   }
 </style>
-
-
