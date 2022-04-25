@@ -148,11 +148,8 @@
       }
     }
   })
-  // Current makes in row
-  // Max makes in row
-  // Average make time overall
 
-  // Num makes and num misses per character
+  // TODO
   // Average make time per character
   // Average attempts per character (makes / total attempts per character)
 </script>
