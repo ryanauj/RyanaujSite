@@ -1,33 +1,68 @@
 <script lang='ts'>
-  let seen: Map<number, number>
-  let i = 0
+  let seen: Map<number, number> = new Map<number, number>()
+  let seenText: string = JSON.stringify(Object.fromEntries(seen))
+  let i: number = 0
+  let complete: boolean = false
 
-  const next = () => {
-    
+  let numsText: string = '[1, 2, 3]'
+  let nums: number[] = JSON.parse(numsText)
+  let sum: number = 3
+  let result: [number, number] = null
+  let error: string = null
+
+  const updateSeenText = () => {
+    seenText = JSON.stringify(Object.fromEntries(seen))
   }
 
-  const hashApproach = (nums: number[], sum: number): [number, number] => {
+  const step = () => {
+    if (complete) {
+      seen = new Map<number, number>()
+      updateSeenText()
+      i = 0
+      result = null
+      complete = false
+      return
+    }
+
+    const diff = sum - nums[i]
+    if (seen.has(diff)) {
+      seen.set(nums[i], i)
+      updateSeenText()
+      result = [seen.get(diff), i]
+      complete = true
+      return 
+    }
+
+    seen.set(nums[i], i)
+    updateSeenText()
+
+    i += 1
+
+    if (i >= nums.length) {
+      complete = true
+    }
+  }
+
+  const hashApproach = (nums: number[], sum: number) => {
     seen = new Map<number, number>()
 
-    for (let i = 0; i < nums.length; i++) {
-      const diff = sum - nums[i]
+    for (let j = 0; j < nums.length; j++) {
+      const diff = sum - nums[j]
       if (seen.has(diff)) {
-        return [seen.get(diff), i]
+        updateSeenText()
+        result = [seen.get(diff), j]
+        i = j
+        complete = true
+        return
       }
-      seen.set(nums[i], i)
+      seen.set(nums[j], j)
     }
-    return [-1, -1]
+    complete = true
   }
-
-  let nums: number[] = []
-  let numsText: string = '[]'
-  let sum: number = -1
-  let result: [number, number] = [-1, -1]
-  let error: string = null
 
   const run = () => {
     try {
-      result = hashApproach(nums, sum)
+      hashApproach(nums, sum)
       error = null
     }
     catch (e) {
@@ -48,13 +83,23 @@
 
 <h1>Two Sum</h1>
 
-<input type="text" on:keyup={setNums} bind:value={numsText}>
-<input type="number" bind:value={sum}>
+<input type="text" on:keyup={setNums} bind:value={numsText} disabled={i > 0}>
+<input type="number" bind:value={sum} disabled={i > 0}>
 
 <button on:click={run}>Run</button>
+<button on:click={step}>
+  {#if complete}
+    Reset
+  {:else}
+    Step
+  {/if}
+</button>
+
+<p>Seen: {seenText}</p>
+<p>Iteration: {i}</p>
 
 {#if result !== null}
-  <p>[{result[0]}, {result[1]}]</p>
+  <p>Result: [{nums[result[0]]}, {nums[result[1]]}]</p>
 {/if}
 
 {#if error !== null}
