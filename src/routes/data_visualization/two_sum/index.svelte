@@ -1,6 +1,13 @@
 <script lang='ts'>
+  let seen: Map<number, number>
+  let i = 0
+
+  const next = () => {
+    
+  }
+
   const hashApproach = (nums: number[], sum: number): [number, number] => {
-    const seen = new Map<number, number>()
+    seen = new Map<number, number>()
 
     for (let i = 0; i < nums.length; i++) {
       const diff = sum - nums[i]
@@ -12,10 +19,7 @@
     return [-1, -1]
   }
 
-  const next = () => {
-    
-  }
-
+  let nums: number[] = []
   let numsText: string = '[]'
   let sum: number = -1
   let result: [number, number] = [-1, -1]
@@ -23,8 +27,17 @@
 
   const run = () => {
     try {
-      const nums: number[] = JSON.parse(numsText)
       result = hashApproach(nums, sum)
+      error = null
+    }
+    catch (e) {
+      error = e.message
+    }
+  }
+
+  const setNums = () => {
+    try {
+      nums = JSON.parse(numsText)
       error = null
     }
     catch (e) {
@@ -35,7 +48,7 @@
 
 <h1>Two Sum</h1>
 
-<input type="text" bind:value={numsText}>
+<input type="text" on:keyup={setNums} bind:value={numsText}>
 <input type="number" bind:value={sum}>
 
 <button on:click={run}>Run</button>
@@ -45,5 +58,6 @@
 {/if}
 
 {#if error !== null}
+  <p>Inputs must be an array of numbers and a number as input</p>
   <p>Error: {error}</p>
 {/if}
