@@ -1,5 +1,4 @@
 <script>
-  import Navbar from '../../components/navbar.svelte'
   import { onMount, onDestroy } from 'svelte'
 
   const getRandomValInRange = (min, max) => {
@@ -149,16 +148,12 @@
       }
     }
   })
-  // Current makes in row
-  // Max makes in row
-  // Average make time overall
 
-  // Num makes and num misses per character
+  // TODO
   // Average make time per character
   // Average attempts per character (makes / total attempts per character)
 </script>
 
-<Navbar/>
 <div class="w3-container">
   <h1 class="header">Touch Typer</h1>
 
