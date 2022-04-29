@@ -24,20 +24,52 @@
   const sortNums = () => {
     nums.sort((a, b) => a-b)
     nums = nums
-    numsText = JSON.stringify(nums)
   }
 
   // ----------------------------------------
   // Run
   // ----------------------------------------
-  let i: number = 0
+  let left: number = 0
+  let right: number = nums.length - 1
   let complete: boolean = false
+  let running: boolean = false
   let result: [number, number] = null
+
+  const step = () => {
+    if (complete) {
+      complete = false
+      running = true
+      left = 0
+      right = nums.length - 1
+      sortNums()
+      return
+    }
+
+    if (left >= right) {
+      complete = true
+      running = false
+      return
+    }
+
+    const runningSum = nums[left] + nums[right]
+
+    if (runningSum < sum) {
+      left += 1
+    }
+    else if (runningSum > sum) {
+      right -= 1
+    }
+    else {
+      result = [nums[left], nums[right]]
+      complete = true
+      running = false
+    }
+  }
 
   const algorithm = () => {
     sortNums()
-    let left = 0
-    let right = nums.length - 1
+    left = 0
+    right = nums.length - 1
     while (left < right) {
       const runningSum = nums[left] + nums[right]
       if (runningSum < sum) {
@@ -67,15 +99,32 @@
 <h4>Two Pointer Approach</h4>
 
 <!-- Need to refactor this into separate inputs component -->
-<input type="text" on:keyup={setNums} bind:value={numsText} disabled={i > 0}>
-<input type="number" bind:value={sum} disabled={i > 0}>
+<input type="text" on:keyup={setNums} bind:value={numsText} disabled={running}>
+<input type="number" bind:value={sum} disabled={running}>
 
 <button on:click={algorithm}>Run</button>
+<button on:click={step}>Step</button>
 
 {#if error !== null}
   <p>Inputs must be an array of numbers and a number as input</p>
   <p>Error: {error}</p>
 {/if}
+
+<p>[ 
+  {#each nums as num, n}
+    {#if n !== 0}
+    , 
+    {/if}
+    {#if (left === n || right == n) && !complete}
+      <span class="highlight">{num}</span> 
+    {:else}
+      {num} 
+    {/if}
+  {/each}
+  ]
+</p>
+
+
 
 {#if complete}
   <p class="highlight">Result: [{result[0]}, {result[1]}]</p>
