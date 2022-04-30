@@ -10,10 +10,15 @@
   let nums: number[] = JSON.parse(numsText)
   let sum: number = 3
   let error: string = null
+  let complete: boolean = false
+  let left: number = 0
+  let right: number = nums.length - 1
 
   const setNums = () => {
     try {
+      complete = false
       nums = JSON.parse(numsText)
+      right = nums.length - 1
       error = null
     }
     catch (e) {
@@ -29,14 +34,11 @@
   // ----------------------------------------
   // Run
   // ----------------------------------------
-  let left: number = 0
-  let right: number = nums.length - 1
-  let complete: boolean = false
   let running: boolean = false
   let result: [number, number] = null
 
   const step = () => {
-    if (complete) {
+    if (!running) {
       complete = false
       running = true
       left = 0
@@ -115,7 +117,7 @@
     {#if n !== 0}
     , 
     {/if}
-    {#if (left === n || right == n) && !complete}
+    {#if (left === n || right == n) && (complete || running)}
       <span class="highlight">{num}</span> 
     {:else}
       {num} 
@@ -123,8 +125,6 @@
   {/each}
   ]
 </p>
-
-
 
 {#if complete}
   <p class="highlight">Result: [{result[0]}, {result[1]}]</p>
