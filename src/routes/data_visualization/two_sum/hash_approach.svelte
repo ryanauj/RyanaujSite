@@ -76,6 +76,7 @@
 
 <h4>Hash Approach</h4>
 
+<!-- Need to refactor this into separate inputs component -->
 <input type="text" on:keyup={setNums} bind:value={numsText} disabled={i > 0}>
 <input type="number" bind:value={sum} disabled={i > 0}>
 
