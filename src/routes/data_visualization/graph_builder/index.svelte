@@ -3,7 +3,7 @@
   import cytoscape from 'cytoscape'
 
   let cy
-  let container
+  let graph
   let nodesOutput
   let edgesOutput
 
@@ -17,9 +17,12 @@
     edgesOutput = JSON.stringify(edges)
   }
 
+  const defaultNodeColor = '#666'
+  const selectedNodeColor = 'blue'
+
   onMount(() => {
     cy = cytoscape({
-      container: container,
+      container: graph,
       elements: [
         {
           data: { id: 'a' }
@@ -35,11 +38,10 @@
         {
           selector: 'node',
           style: {
-            'background-color': '#666',
+            'background-color': defaultNodeColor,
             'label': 'data(id)'
           }
         },
-
         {
           selector: 'edge',
           style: {
@@ -57,67 +59,83 @@
       }
     })
 
+    let selectedId = null
+
+    cy.removeAllListeners('tap')
+
+    cy.on('dbltap', event => {
+      const target = event.target
+      if (target === cy) {
+        console.log('tap on background')
+      } else {
+        console.log(`tap on element`)
+        const id = target.id()
+        const isNode = target.isNode() ? 'is a node' : 'is not a node'
+        console.log(`${id} ${isNode}`)
+        if (isNode) {
+          const node = target
+          let isSelectedText = null
+
+          const isSelected = selectedId === id
+
+          if (isSelected) {
+            node.style('background-color', defaultNodeColor)
+            selectedId = null
+            isSelectedText = 'is not selected'
+          }
+          else {
+            if (selectedId !== null) {
+              cy.$(`#${selectedId}`).style('background-color', defaultNodeColor)
+            }
+            node.style('background-color', selectedNodeColor)
+            selectedId = id
+            isSelectedText = 'is selected'
+          }
+
+          console.log(`node ${id} ${isSelectedText}`)
+
+          console.log(node.classes())
+          console.log(node.style())
+        }
+      }
+    })
+
     setNodesOutput()
     setEdgesOutput()
   })
 </script>
 
-<h1>Graph Builder</h1>
+<main class='container'>
+  <h1>Graph Builder</h1>
 
+  <div id='graph' bind:this={graph}></div>
+  <p>{nodesOutput}</p>
+  <p>{edgesOutput}</p>
 
-<div id='container' class='resizable' bind:this={container}></div>
-<p>{nodesOutput}</p>
-<p>{edgesOutput}</p>
+</main>
 
-
-<div class='footer'>
-  <p>Built with <a href='https://js.cytoscape.org/'>Cytoscape.js</a></p>
-</div>
+<footer>
+  <p>Built with <a href="https://js.cytoscape.org/">Cytoscape.js</a></p>
+</footer>
 
 <style>
-  /*Resizeable*/
-
-  .resizable .resizer-right {
-    width: 5px;
-    height: 100%;
-    background: transparent;
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    cursor: e-resize;
-  }
-
-  .resizable .resizer-bottom {
-    width: 100%;
-    height: 5px;
-    background: transparent;
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    cursor: n-resize;
-  }
-
-  .resizable .resizer-both {
-    width: 5px;
-    height: 5px;
-    background: transparent;
-    z-index: 10;
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    cursor: nw-resize;
-  }
-
-  .footer {
+  footer {
     left: 0;
     bottom: 0;
     width: 100%;
     text-align: center;
   }
 
-  #container {
-    width: 300px;
-    height: 300px;
+  .container {
+    width: 80%;
+    margin: auto;
+  }
+
+  #graph {
+    width: 100%;
+    height: 80vh;
     display: block;
+    cursor: pointer;
+    border: 1px solid black;
   }
 </style>
