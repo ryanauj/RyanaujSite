@@ -33,6 +33,7 @@
   },
   "type": "module",
   "dependencies": {
-    "cytoscape": "^3.21.1"
+    "cytoscape": "^3.21.1",
+    "uuid": "^8.3.2"
   }
 }

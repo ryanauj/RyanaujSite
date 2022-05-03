@@ -1,6 +1,7 @@
 <script lang='ts'>
   import { onMount } from 'svelte'
   import cytoscape from 'cytoscape'
+  import { v4 as uuidv4 } from 'uuid'
 
   let cy
   let graph
@@ -12,9 +13,14 @@
     nodesOutput = JSON.stringify(nodes)
   }
 
-  const setEdgesOutput = (json) => {
+  const setEdgesOutput = () => {
     const edges = cy.json().elements.edges.map(e => e.data)
     edgesOutput = JSON.stringify(edges)
+  }
+
+  const refreshJson = () => {
+    setNodesOutput()
+    setEdgesOutput()
   }
 
   const defaultNodeColor = '#666'
@@ -61,47 +67,86 @@
 
     let selectedId = null
 
-    cy.removeAllListeners('tap')
+    const getNode = (id: string) => cy.$(`#${id}`)
+
+    const selectNode = (node) => {
+      if (selectedId !== null) {
+        getNode(selectedId).style('background-color', defaultNodeColor)
+      }
+      node.style('background-color', selectedNodeColor)
+      selectedId = node.id()
+    }
+
+    const unselectNode = (node) => {
+      node.style('background-color', defaultNodeColor)
+      selectedId = null
+    }
+
+    const addNode = (id: string, position: { x: number, y: number }) => {
+      cy.add({
+        group: 'nodes',
+        data: { id },
+        position
+      })
+    }
+
+    const addEdge = (sourceId: string, targetId: string): string => {
+      const id = uuidv4()
+
+      cy.add({
+        group: 'edges',
+        data: {
+          id,
+          source: sourceId,
+          target: targetId
+        }
+      })
+
+      return id
+    }
 
     cy.on('dbltap', event => {
+      console.log(event)
       const target = event.target
       if (target === cy) {
-        console.log('tap on background')
-      } else {
-        console.log(`tap on element`)
-        const id = target.id()
-        const isNode = target.isNode() ? 'is a node' : 'is not a node'
-        console.log(`${id} ${isNode}`)
-        if (isNode) {
-          const node = target
-          let isSelectedText = null
+        const addedId = uuidv4()
 
-          const isSelected = selectedId === id
+        // Add a node at the position of the tap
+        addNode(addedId, event.position)
 
-          if (isSelected) {
-            node.style('background-color', defaultNodeColor)
-            selectedId = null
-            isSelectedText = 'is not selected'
-          }
-          else {
-            if (selectedId !== null) {
-              cy.$(`#${selectedId}`).style('background-color', defaultNodeColor)
-            }
-            node.style('background-color', selectedNodeColor)
-            selectedId = id
-            isSelectedText = 'is selected'
-          }
+        // If there is a selected element, we want to add an edge from there to this element
+        if (selectedId !== null) {
+          addEdge(selectedId, addedId)
+        }
 
-          console.log(`node ${id} ${isSelectedText}`)
+        // Clear selection
+        unselectNode(getNode(selectedId))
 
-          console.log(node.classes())
-          console.log(node.style())
+      } else if (target.isNode()) {
+        const node = target
+
+        // If the target is the selected node, then we can unselect this node
+        if (selectedId === node.id()) {
+          unselectNode(node)
+        }
+        // If another node is selected, we can connect that selected node to the tapped node
+        else if (selectedId !== null) {
+          addEdge(selectedId, node.id())
+          unselectNode(getNode(selectedId))
+        }
+        // If no other node was selected, we want to select the tapped node
+        else {
+          selectNode(node)
         }
       }
+
+      // We want to refresh the json after making changes
+      // (I realize that this could refresh when nothing changes atm,
+      //   i.e. on selection. Ok with that for now)
+      refreshJson()
     })
 
-    setNodesOutput()
-    setEdgesOutput()
+    refreshJson()
   })
 </script>
 
