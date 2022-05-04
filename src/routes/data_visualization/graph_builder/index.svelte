@@ -105,7 +105,7 @@
       return id
     }
 
-    cy.on('dbltap', event => {
+    cy.on('tap', event => {
       console.log(event)
       const target = event.target
       if (target === cy) {
@@ -138,6 +138,20 @@
         else {
           selectNode(node)
         }
+      }
+
+      // We want to refresh the json after making changes
+      // (I realize that this could refresh when nothing changes atm,
+      //   i.e. on selection. Ok with that for now)
+      refreshJson()
+    })
+
+    cy.on('dbltap', event => {
+      console.log(event)
+      const target = event.target
+      // If target is a node or an edge, we want to remove it
+      if (target !== cy  && (target.isNode() || target.isEdge())) {
+        cy.remove(target)
       }
 
       // We want to refresh the json after making changes
