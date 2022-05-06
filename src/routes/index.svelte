@@ -6,6 +6,7 @@
   <ul>
     <li><a href="https://timesense.tech">TimeSense</a></li>
     <li><a href="/touchtyper">TouchTyper</a></li>
+    <li><a href="/data_visualization">Data Visualization</a></li>
   </ul>
 </div>
 
