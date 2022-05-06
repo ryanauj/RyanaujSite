@@ -38,7 +38,7 @@
         },
         {
           data: { id: 'ab', source: 'a', target: 'b' }
-        }
+        },
       ],
       style: [
         {
@@ -82,7 +82,7 @@
       selectedId = null
     }
 
-    const addNode = (id: string, position: { x: number, y: number }) => {
+    const addNode = (id: string, position: { x: number, y: number } = null) => {
       cy.add({
         group: 'nodes',
         data: { id },
@@ -106,7 +106,6 @@
     }
 
     cy.on('tap', event => {
-      console.log(event)
       const target = event.target
       if (target === cy) {
         const addedId = uuidv4()
@@ -117,10 +116,12 @@
         // If there is a selected element, we want to add an edge from there to this element
         if (selectedId !== null) {
           addEdge(selectedId, addedId)
+          // Once we have added an edge, we want to clear the selection
+          unselectNode(getNode(selectedId))
         }
 
-        // Clear selection
-        unselectNode(getNode(selectedId))
+        // We want to set this as selected so we can easily add an edge from it.
+        selectNode(getNode(addedId))
 
       } else if (target.isNode()) {
         const node = target
@@ -133,6 +134,8 @@
         else if (selectedId !== null) {
           addEdge(selectedId, node.id())
           unselectNode(getNode(selectedId))
+          // We want to set this as selected so we can easily add an edge from it.
+          selectNode(node)
         }
         // If no other node was selected, we want to select the tapped node
         else {
@@ -147,7 +150,6 @@
     })
 
     cy.on('dbltap', event => {
-      console.log(event)
       const target = event.target
       // If target is a node or an edge, we want to remove it
       if (target !== cy  && (target.isNode() || target.isEdge())) {
@@ -166,10 +168,22 @@
 
 <main class='container'>
   <h1>Graph Builder</h1>
+  
 
   <div id='graph' bind:this={graph}></div>
+  <h4>Nodes</h4>
   <p>{nodesOutput}</p>
+  <h4>Edges</h4>
   <p>{edgesOutput}</p>
+
+  <fieldset>
+    <legend>Legend</legend>
+    <p>Blue means a node is selected, and grey means a node is not selected.</p>
+    <p>Tap an empty space to create a node.</p>
+    <p>Tap a selected node to deselect it.</p>
+    <p>If a node is selected, tap another node to create an edge from the selected node to that, or tap an empty space to create a node at that position and select that.</p>
+    <p>Double tap a node or edge to delete it.</p>
+  </fieldset>
 
 </main>
 
