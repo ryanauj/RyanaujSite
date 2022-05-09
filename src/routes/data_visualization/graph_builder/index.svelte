@@ -154,6 +154,7 @@
       // If target is a node or an edge, we want to remove it
       if (target !== cy  && (target.isNode() || target.isEdge())) {
         cy.remove(target)
+        selectedId = null
       }
 
       // We want to refresh the json after making changes
