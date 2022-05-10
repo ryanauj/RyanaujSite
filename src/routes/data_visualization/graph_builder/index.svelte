@@ -7,6 +7,7 @@
   let graph
   let nodesOutput
   let edgesOutput
+  let selectedId = null
 
   const setNodesOutput = () => {
     const nodes = cy.json().elements.nodes.map(n => n.data)
@@ -64,8 +65,6 @@
         rows: 1
       }
     })
-
-    let selectedId = null
 
     const getNode = (id: string) => cy.$(`#${id}`)
 
@@ -169,9 +168,13 @@
 
 <main class='container'>
   <h1>Graph Builder</h1>
-  
 
   <div id='graph' bind:this={graph}></div>
+
+  {#if selectedId !== null}
+    <h5>Name</h5>
+    <input disabled type="text" value={selectedId}>
+  {/if}
   <h4>Nodes</h4>
   <p>{nodesOutput}</p>
   <h4>Edges</h4>
