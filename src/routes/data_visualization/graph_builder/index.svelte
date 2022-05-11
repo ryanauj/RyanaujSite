@@ -7,15 +7,15 @@
   let graph
   let nodesOutput
   let edgesOutput
-  let selectedId = null
+  let selectedNode = null
 
   const setNodesOutput = () => {
-    const nodes = cy.json().elements.nodes.map(n => n.data)
+    const nodes = cy.json().elements?.nodes?.map(n => n.data)
     nodesOutput = JSON.stringify(nodes)
   }
 
   const setEdgesOutput = () => {
-    const edges = cy.json().elements.edges.map(e => e.data)
+    const edges = cy.json().elements?.edges?.map(e => e.data)
     edgesOutput = JSON.stringify(edges)
   }
 
@@ -27,15 +27,25 @@
   const defaultNodeColor = '#666'
   const selectedNodeColor = 'blue'
 
+  const getNode = (id: string) => cy.$(`#${id}`)
+
+  let nameCount = 3
+
+  const onSelectedNameChange = (event) => {
+    const updatedName = event?.srcElement?.value
+    selectedNode.data('name', updatedName)
+    refreshJson()
+  }
+
   onMount(() => {
     cy = cytoscape({
       container: graph,
       elements: [
         {
-          data: { id: 'a' }
+          data: { id: 'a', name: '1' }
         },
         {
-          data: { id: 'b' }
+          data: { id: 'b', name: '2' }
         },
         {
           data: { id: 'ab', source: 'a', target: 'b' }
@@ -46,7 +56,10 @@
           selector: 'node',
           style: {
             'background-color': defaultNodeColor,
-            'label': 'data(id)'
+            'label': ele => {
+              // Use the name property if it is set
+              return ele?.data()?.name
+            }
           }
         },
         {
@@ -66,25 +79,35 @@
       }
     })
 
-    const getNode = (id: string) => cy.$(`#${id}`)
-
     const selectNode = (node) => {
-      if (selectedId !== null) {
-        getNode(selectedId).style('background-color', defaultNodeColor)
+      if (selectedNode !== null) {
+        selectedNode.style('background-color', defaultNodeColor)
       }
       node.style('background-color', selectedNodeColor)
-      selectedId = node.id()
+      selectedNode = node
     }
 
-    const unselectNode = (node) => {
-      node.style('background-color', defaultNodeColor)
-      selectedId = null
+    const unselectNode = () => {
+      if (selectedNode === null) {
+        return
+      }
+      selectedNode.style('background-color', defaultNodeColor)
+      selectedNode = null
     }
 
-    const addNode = (id: string, position: { x: number, y: number } = null) => {
+    const addNode = (
+      id: string,
+      position: { x: number, y: number } = null,
+      name: string = null
+    ) => {
+      let nameVal = name
+      if (nameVal === null) {
+        nameVal = nameCount
+        nameCount += 1
+      }
       cy.add({
         group: 'nodes',
-        data: { id },
+        data: { id, name: nameVal },
         position
       })
     }
@@ -113,10 +136,10 @@
         addNode(addedId, event.position)
 
         // If there is a selected element, we want to add an edge from there to this element
-        if (selectedId !== null) {
-          addEdge(selectedId, addedId)
+        if (selectedNode !== null) {
+          addEdge(selectedNode.id(), addedId)
           // Once we have added an edge, we want to clear the selection
-          unselectNode(getNode(selectedId))
+          unselectNode()
         }
 
         // We want to set this as selected so we can easily add an edge from it.
@@ -126,13 +149,13 @@
         const node = target
 
         // If the target is the selected node, then we can unselect this node
-        if (selectedId === node.id()) {
-          unselectNode(node)
+        if (selectedNode === node) {
+          unselectNode()
         }
         // If another node is selected, we can connect that selected node to the tapped node
-        else if (selectedId !== null) {
-          addEdge(selectedId, node.id())
-          unselectNode(getNode(selectedId))
+        else if (selectedNode !== null) {
+          addEdge(selectedNode.id(), node.id())
+          unselectNode()
           // We want to set this as selected so we can easily add an edge from it.
           selectNode(node)
         }
@@ -153,7 +176,9 @@
       // If target is a node or an edge, we want to remove it
       if (target !== cy  && (target.isNode() || target.isEdge())) {
         cy.remove(target)
-        selectedId = null
+        if (selectedNode !== null) {
+          unselectNode()
+        }
       }
 
       // We want to refresh the json after making changes
@@ -171,9 +196,9 @@
 
   <div id='graph' bind:this={graph}></div>
 
-  {#if selectedId !== null}
+  {#if selectedNode !== null}
     <h5>Name</h5>
-    <input disabled type="text" value={selectedId}>
+    <input on:input={onSelectedNameChange} type="text" value={selectedNode?.data()?.name}>
   {/if}
   <h4>Nodes</h4>
   <p>{nodesOutput}</p>
