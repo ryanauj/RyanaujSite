@@ -1,13 +1,39 @@
 <script lang='ts'>
   import { onMount } from 'svelte'
   import cytoscape from 'cytoscape'
+  import dagre from 'cytoscape-dagre'
+  import cola from 'cytoscape-cola'
   import { v4 as uuidv4 } from 'uuid'
 
   let cy
   let graph
   let nodesOutput
   let edgesOutput
+  let fitToViewport = false
   let selectedNode = null
+  const layoutTypes = [
+    'null',
+    'random',
+    'preset',
+    'grid',
+    'circle',
+    'concentric',
+    'breadthfirst',
+    'cose',
+    'dagre',
+    'cola'
+  ]
+  let selectedLayoutType = layoutTypes[8]
+
+  const updateLayout = () => {
+    console.log('Layout Run')
+    const layout = cy.layout({
+      name: selectedLayoutType,
+      fit: fitToViewport
+    })
+    layout.run()
+    console.log(layout)
+  }
 
   const setNodesOutput = () => {
     const nodes = cy.json().elements?.nodes?.map(n => n.data)
@@ -38,6 +64,9 @@
   }
 
   onMount(() => {
+    cytoscape.use(dagre)
+    cytoscape.use(cola)
+
     cy = cytoscape({
       container: graph,
       elements: [
@@ -73,10 +102,6 @@
           }
         }
       ],
-      layout: {
-        name: 'grid',
-        rows: 1
-      }
     })
 
     const selectNode = (node) => {
@@ -127,7 +152,7 @@
       return id
     }
 
-    cy.on('tap', event => {
+    const add = (event, keepSelection=false) => {
       const target = event.target
       if (target === cy) {
         const addedId = uuidv4()
@@ -142,22 +167,27 @@
           unselectNode()
         }
 
-        // We want to set this as selected so we can easily add an edge from it.
-        selectNode(getNode(addedId))
+        if (keepSelection) {
+          // If a new node was added, we want to set this as selected so we can easily add an edge from it.
+          selectNode(getNode(addedId))
+        }
 
       } else if (target.isNode()) {
         const node = target
 
         // If the target is the selected node, then we can unselect this node
-        if (selectedNode === node) {
+        if (selectedNode === node || selectedNode?.id() === node?.id()) {
           unselectNode()
         }
         // If another node is selected, we can connect that selected node to the tapped node
         else if (selectedNode !== null) {
           addEdge(selectedNode.id(), node.id())
           unselectNode()
-          // We want to set this as selected so we can easily add an edge from it.
-          selectNode(node)
+
+          if (keepSelection) {
+            // We want to set this as selected so we can easily add an edge from it.
+            selectNode(node)
+          }
         }
         // If no other node was selected, we want to select the tapped node
         else {
@@ -169,9 +199,9 @@
       // (I realize that this could refresh when nothing changes atm,
       //   i.e. on selection. Ok with that for now)
       refreshJson()
-    })
+    }
 
-    cy.on('dbltap', event => {
+    const remove = (event) => {
       const target = event.target
       // If target is a node or an edge, we want to remove it
       if (target !== cy  && (target.isNode() || target.isEdge())) {
@@ -185,6 +215,32 @@
       // (I realize that this could refresh when nothing changes atm,
       //   i.e. on selection. Ok with that for now)
       refreshJson()
+    }
+
+    let tapholdOccurred = false 
+
+    cy.on('tap', event => {
+      console.log('tap')
+      if (!tapholdOccurred) {
+        add(event)
+      }
+      tapholdOccurred = false
+    })
+
+    cy.on('dbltap', event => {
+      console.log('dbltap')
+      remove(event)
+    })
+
+    cy.on('taphold', event => {
+      console.log('taphold')
+      tapholdOccurred = true
+      add(event, true)
+    })
+
+    cy.on('cxttap', event => {
+      console.log('cxttap')
+      add(event, true)
     })
 
     refreshJson()
@@ -196,23 +252,78 @@
 
   <div id='graph' bind:this={graph}></div>
 
-  {#if selectedNode !== null}
-    <h5>Name</h5>
-    <input on:input={onSelectedNameChange} type="text" value={selectedNode?.data()?.name}>
-  {/if}
-  <h4>Nodes</h4>
-  <p>{nodesOutput}</p>
-  <h4>Edges</h4>
-  <p>{edgesOutput}</p>
+  <div>
+    <h5>Selected Node</h5>
+    <input
+      type="text"
+      disabled={selectedNode === null}
+      on:input={onSelectedNameChange}
+      value={selectedNode?.data()?.name ?? ''}>
+  </div>
 
-  <fieldset>
-    <legend>Legend</legend>
-    <p>Blue means a node is selected, and grey means a node is not selected.</p>
-    <p>Tap an empty space to create a node.</p>
-    <p>Tap a selected node to deselect it.</p>
-    <p>If a node is selected, tap another node to create an edge from the selected node to that, or tap an empty space to create a node at that position and select that.</p>
-    <p>Double tap a node or edge to delete it.</p>
-  </fieldset>
+  <div class="section">
+    <fieldset>
+      <legend>
+        <h4>Layout Options</h4>
+      </legend>
+      <div class="subsection">
+        <label>Types</label>
+        <select bind:value={selectedLayoutType}>
+          {#each layoutTypes as layoutType}
+            <option value={layoutType}>
+              {layoutType}
+            </option>
+          {/each}
+        </select>
+      </div>
+      <div class="subsection">
+        <label>
+          <input type="checkbox" bind:checked={fitToViewport}>
+          Fit To Viewport
+        </label>
+      </div>
+
+      <div class="extra-space">
+        <button on:click={updateLayout}>Organize Layout</button>
+      </div>
+    </fieldset>
+  </div>
+
+  <div class="section">
+    <fieldset>
+      <legend>
+        <h4 class="slim-bottom">Nodes</h4>
+      </legend>
+      <code>
+        {nodesOutput}
+      </code>
+    </fieldset>
+  </div>
+
+  <div class="section">
+    <fieldset>
+      <legend>
+        <h4 class="slim-bottom">Edges</h4>
+      </legend>
+      <code>
+        {edgesOutput}
+      </code>
+    </fieldset>
+  </div>
+
+  <div class="section">
+    <fieldset>
+      <legend>
+        <h4 class="slim-bottom">Legend</h4>
+      </legend>
+      <p>Blue means a node is selected, and grey means a node is not selected.</p>
+      <p>Tap an empty space to create a node.</p>
+      <p>Tap a selected node to deselect it.</p>
+      <p>If a node is selected, tap another node to create an edge from the selected node to that, or tap an empty space to create a node at that position and select that.</p>
+      <p>Double tap a node or edge to delete it.</p>
+      <p>Tap with two fingers, tap and hold, or right click to create a node and keep it selected.</p>
+    </fieldset>
+  </div>
 
 </main>
 
@@ -226,6 +337,35 @@
     bottom: 0;
     width: 100%;
     text-align: center;
+  }
+
+  code {
+    display: block;
+    padding: 10px 5px;
+    margin-bottom: 5px;
+    background-color: #eee;
+  }
+
+  legend {
+    padding: 0 3px;
+  }
+
+  .slim-bottom {
+    padding-bottom: 0px;
+    margin-bottom: 0px;
+    margin-top: 0px;
+  }
+
+  .extra-space {
+    padding: 10px 0;
+  }
+
+  .section {
+    padding: 10px 0;
+  }
+
+  .subsection {
+    padding: 2px 0;
   }
 
   .container {
