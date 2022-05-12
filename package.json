@@ -34,6 +34,7 @@
   "type": "module",
   "dependencies": {
     "cytoscape": "^3.21.1",
+    "cytoscape-dagre": "^2.4.0",
     "uuid": "^8.3.2"
   }
 }

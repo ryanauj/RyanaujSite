@@ -1,6 +1,7 @@
 <script lang='ts'>
   import { onMount } from 'svelte'
   import cytoscape from 'cytoscape'
+  import dagre from 'cytoscape-dagre'
   import { v4 as uuidv4 } from 'uuid'
 
   let cy
@@ -8,6 +9,25 @@
   let nodesOutput
   let edgesOutput
   let selectedNode = null
+  const layoutTypes = [
+    'null',
+    'random',
+    'preset',
+    'grid',
+    'circle',
+    'concentric',
+    'breadthfirst',
+    'cose',
+    'dagre'
+  ]
+  let selectedLayoutType = layoutTypes[8]
+
+  const updateLayout = () => {
+    console.log('Layout Run')
+    const layout = cy.layout({ name: selectedLayoutType })
+    layout.run()
+    console.log(layout)
+  }
 
   const setNodesOutput = () => {
     const nodes = cy.json().elements?.nodes?.map(n => n.data)
@@ -38,6 +58,7 @@
   }
 
   onMount(() => {
+    cytoscape.use(dagre)
     cy = cytoscape({
       container: graph,
       elements: [
@@ -73,10 +94,6 @@
           }
         }
       ],
-      layout: {
-        name: 'grid',
-        rows: 1
-      }
     })
 
     const selectNode = (node) => {
@@ -127,7 +144,7 @@
       return id
     }
 
-    cy.on('tap', event => {
+    const add = (event, keepSelection=false) => {
       const target = event.target
       if (target === cy) {
         const addedId = uuidv4()
@@ -142,22 +159,27 @@
           unselectNode()
         }
 
-        // We want to set this as selected so we can easily add an edge from it.
-        selectNode(getNode(addedId))
+        if (keepSelection) {
+          // If a new node was added, we want to set this as selected so we can easily add an edge from it.
+          selectNode(getNode(addedId))
+        }
 
       } else if (target.isNode()) {
         const node = target
 
         // If the target is the selected node, then we can unselect this node
-        if (selectedNode === node) {
+        if (selectedNode === node || selectedNode?.id() === node?.id()) {
           unselectNode()
         }
         // If another node is selected, we can connect that selected node to the tapped node
         else if (selectedNode !== null) {
           addEdge(selectedNode.id(), node.id())
           unselectNode()
-          // We want to set this as selected so we can easily add an edge from it.
-          selectNode(node)
+
+          if (keepSelection) {
+            // We want to set this as selected so we can easily add an edge from it.
+            selectNode(node)
+          }
         }
         // If no other node was selected, we want to select the tapped node
         else {
@@ -169,9 +191,9 @@
       // (I realize that this could refresh when nothing changes atm,
       //   i.e. on selection. Ok with that for now)
       refreshJson()
-    })
+    }
 
-    cy.on('dbltap', event => {
+    const remove = (event) => {
       const target = event.target
       // If target is a node or an edge, we want to remove it
       if (target !== cy  && (target.isNode() || target.isEdge())) {
@@ -185,6 +207,32 @@
       // (I realize that this could refresh when nothing changes atm,
       //   i.e. on selection. Ok with that for now)
       refreshJson()
+    }
+
+    let tapholdOccurred = false 
+
+    cy.on('tap', event => {
+      console.log('tap')
+      if (!tapholdOccurred) {
+        add(event)
+      }
+      tapholdOccurred = false
+    })
+
+    cy.on('dbltap', event => {
+      console.log('dbltap')
+      remove(event)
+    })
+
+    cy.on('taphold', event => {
+      console.log('taphold')
+      tapholdOccurred = true
+      add(event, true)
+    })
+
+    cy.on('cxttap', event => {
+      console.log('cxttap')
+      add(event, true)
     })
 
     refreshJson()
@@ -197,9 +245,25 @@
   <div id='graph' bind:this={graph}></div>
 
   {#if selectedNode !== null}
-    <h5>Name</h5>
-    <input on:input={onSelectedNameChange} type="text" value={selectedNode?.data()?.name}>
+    <div>
+      <h5>Selected Node</h5>
+      <input on:input={onSelectedNameChange} type="text" value={selectedNode?.data()?.name}>
+    </div>
   {/if}
+
+  <div>
+    <h4>Layout Options</h4>
+    <select bind:value={selectedLayoutType}>
+      {#each layoutTypes as layoutType}
+        <option value={layoutType}>
+          {layoutType}
+        </option>
+      {/each}
+    </select>
+
+    <button on:click={updateLayout}>Organize Layout</button>
+  </div>
+
   <h4>Nodes</h4>
   <p>{nodesOutput}</p>
   <h4>Edges</h4>
