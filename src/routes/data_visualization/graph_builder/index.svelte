@@ -2,12 +2,14 @@
   import { onMount } from 'svelte'
   import cytoscape from 'cytoscape'
   import dagre from 'cytoscape-dagre'
+  import cola from 'cytoscape-cola'
   import { v4 as uuidv4 } from 'uuid'
 
   let cy
   let graph
   let nodesOutput
   let edgesOutput
+  let fitToViewport = false
   let selectedNode = null
   const layoutTypes = [
     'null',
@@ -18,13 +20,17 @@
     'concentric',
     'breadthfirst',
     'cose',
-    'dagre'
+    'dagre',
+    'cola'
   ]
   let selectedLayoutType = layoutTypes[8]
 
   const updateLayout = () => {
     console.log('Layout Run')
-    const layout = cy.layout({ name: selectedLayoutType })
+    const layout = cy.layout({
+      name: selectedLayoutType,
+      fit: fitToViewport
+    })
     layout.run()
     console.log(layout)
   }
@@ -59,6 +65,8 @@
 
   onMount(() => {
     cytoscape.use(dagre)
+    cytoscape.use(cola)
+
     cy = cytoscape({
       container: graph,
       elements: [
@@ -244,39 +252,78 @@
 
   <div id='graph' bind:this={graph}></div>
 
-  {#if selectedNode !== null}
-    <div>
-      <h5>Selected Node</h5>
-      <input on:input={onSelectedNameChange} type="text" value={selectedNode?.data()?.name}>
-    </div>
-  {/if}
-
   <div>
-    <h4>Layout Options</h4>
-    <select bind:value={selectedLayoutType}>
-      {#each layoutTypes as layoutType}
-        <option value={layoutType}>
-          {layoutType}
-        </option>
-      {/each}
-    </select>
-
-    <button on:click={updateLayout}>Organize Layout</button>
+    <h5>Selected Node</h5>
+    <input
+      type="text"
+      disabled={selectedNode === null}
+      on:input={onSelectedNameChange}
+      value={selectedNode?.data()?.name ?? ''}>
   </div>
 
-  <h4>Nodes</h4>
-  <p>{nodesOutput}</p>
-  <h4>Edges</h4>
-  <p>{edgesOutput}</p>
+  <div class="section">
+    <fieldset>
+      <legend>
+        <h4>Layout Options</h4>
+      </legend>
+      <div class="subsection">
+        <label>Types</label>
+        <select bind:value={selectedLayoutType}>
+          {#each layoutTypes as layoutType}
+            <option value={layoutType}>
+              {layoutType}
+            </option>
+          {/each}
+        </select>
+      </div>
+      <div class="subsection">
+        <label>
+          <input type="checkbox" bind:checked={fitToViewport}>
+          Fit To Viewport
+        </label>
+      </div>
 
-  <fieldset>
-    <legend>Legend</legend>
-    <p>Blue means a node is selected, and grey means a node is not selected.</p>
-    <p>Tap an empty space to create a node.</p>
-    <p>Tap a selected node to deselect it.</p>
-    <p>If a node is selected, tap another node to create an edge from the selected node to that, or tap an empty space to create a node at that position and select that.</p>
-    <p>Double tap a node or edge to delete it.</p>
-  </fieldset>
+      <div class="extra-space">
+        <button on:click={updateLayout}>Organize Layout</button>
+      </div>
+    </fieldset>
+  </div>
+
+  <div class="section">
+    <fieldset>
+      <legend>
+        <h4 class="slim-bottom">Nodes</h4>
+      </legend>
+      <code>
+        {nodesOutput}
+      </code>
+    </fieldset>
+  </div>
+
+  <div class="section">
+    <fieldset>
+      <legend>
+        <h4 class="slim-bottom">Edges</h4>
+      </legend>
+      <code>
+        {edgesOutput}
+      </code>
+    </fieldset>
+  </div>
+
+  <div class="section">
+    <fieldset>
+      <legend>
+        <h4 class="slim-bottom">Legend</h4>
+      </legend>
+      <p>Blue means a node is selected, and grey means a node is not selected.</p>
+      <p>Tap an empty space to create a node.</p>
+      <p>Tap a selected node to deselect it.</p>
+      <p>If a node is selected, tap another node to create an edge from the selected node to that, or tap an empty space to create a node at that position and select that.</p>
+      <p>Double tap a node or edge to delete it.</p>
+      <p>Tap with two fingers, tap and hold, or right click to create a node and keep it selected.</p>
+    </fieldset>
+  </div>
 
 </main>
 
@@ -290,6 +337,35 @@
     bottom: 0;
     width: 100%;
     text-align: center;
+  }
+
+  code {
+    display: block;
+    padding: 10px 5px;
+    margin-bottom: 5px;
+    background-color: #eee;
+  }
+
+  legend {
+    padding: 0 3px;
+  }
+
+  .slim-bottom {
+    padding-bottom: 0px;
+    margin-bottom: 0px;
+    margin-top: 0px;
+  }
+
+  .extra-space {
+    padding: 10px 0;
+  }
+
+  .section {
+    padding: 10px 0;
+  }
+
+  .subsection {
+    padding: 2px 0;
   }
 
   .container {
