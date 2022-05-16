@@ -1,15 +1,24 @@
 <script lang='ts'>
+  console.log('script running')
+
+  import TextArea from '../../../components/TextAreaAutosize.svelte'
   import { onMount } from 'svelte'
   import cytoscape from 'cytoscape'
-  import dagre from 'cytoscape-dagre'
+  // For some reason dagre is causing an error when compiled:
+  // Cannot read properties of undefined (reading 'Graph')
+  // Omitting for now.
+  /* import dagre from 'cytoscape-dagre' */
   import cola from 'cytoscape-cola'
+  import klay from 'cytoscape-klay'
+  /* import elk from 'cytoscape-elk' */
   import { v4 as uuidv4 } from 'uuid'
 
   let cy
   let graph
   let nodesOutput
   let edgesOutput
-  let fitToViewport = false
+  let jsonElementsText
+  let fitToViewport = true
   let selectedNode = null
   const layoutTypes = [
     'null',
@@ -20,10 +29,12 @@
     'concentric',
     'breadthfirst',
     'cose',
-    'dagre',
-    'cola'
+    /* 'dagre', */
+    'cola',
+    'klay',
+    /* 'elk' */
   ]
-  let selectedLayoutType = layoutTypes[8]
+  let selectedLayoutType = layoutTypes[layoutTypes.length-1]
 
   const updateLayout = () => {
     console.log('Layout Run')
@@ -45,9 +56,18 @@
     edgesOutput = JSON.stringify(edges)
   }
 
+  const setJsonElementsText = () => {
+    let jsonElements = cy.json().elements ?? {}
+    jsonElements.nodes = jsonElements.nodes?.map(n => n.data)
+    jsonElements.edges = jsonElements.edges?.map(n => n.data)
+    jsonElementsText = JSON.stringify(jsonElements, null, 2)
+  }
+
   const refreshJson = () => {
+    console.log(cy.json())
     setNodesOutput()
     setEdgesOutput()
+    setJsonElementsText()
   }
 
   const defaultNodeColor = '#666'
@@ -63,9 +83,34 @@
     refreshJson()
   }
 
+  const setElements = () => {
+    // https://stackoverflow.com/questions/35770055/replace-all-elements-and-redraw-graph-softly-in-cytoscape-js
+    const elements = JSON.parse(jsonElementsText)
+    if (elements === null) {
+      return
+    }
+    cy.elements().remove()
+    if (elements.nodes !== null) {
+      const nodes = elements.nodes.map(node => ({ data: { ...node }, group: 'nodes' }))
+      console.log('nodes', nodes)
+      cy.add(nodes)
+    }
+    refreshJson()
+    if (elements.edges !== null) {
+      const edges = elements.edges.map(edge => ({ data: { ...edge }, group: 'edges' }))
+      console.log('edges', edges)
+      cy.add(edges)
+    }
+    updateLayout()
+    refreshJson()
+  }
+
   onMount(() => {
-    cytoscape.use(dagre)
+    console.log('onMount')
+    /* cytoscape.use(dagre) */
     cytoscape.use(cola)
+    cytoscape.use(klay)
+    /* cytoscape.use(elk) */
 
     cy = cytoscape({
       container: graph,
@@ -266,6 +311,7 @@
       <legend>
         <h4>Layout Options</h4>
       </legend>
+
       <div class="subsection">
         <label>Types</label>
         <select bind:value={selectedLayoutType}>
@@ -276,6 +322,7 @@
           {/each}
         </select>
       </div>
+
       <div class="subsection">
         <label>
           <input type="checkbox" bind:checked={fitToViewport}>
@@ -292,22 +339,13 @@
   <div class="section">
     <fieldset>
       <legend>
-        <h4 class="slim-bottom">Nodes</h4>
+        <h4 class="slim-bottom">Edit JSON</h4>
       </legend>
-      <code>
-        {nodesOutput}
-      </code>
-    </fieldset>
-  </div>
-
-  <div class="section">
-    <fieldset>
-      <legend>
-        <h4 class="slim-bottom">Edges</h4>
-      </legend>
-      <code>
-        {edgesOutput}
-      </code>
+      <TextArea
+        bind:value={jsonElementsText}
+        minRows={4}
+        maxRows={40}/>
+      <button on:click={setElements}>Update Elements</button>
     </fieldset>
   </div>
 
