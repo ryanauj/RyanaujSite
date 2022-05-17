@@ -30,6 +30,7 @@
 	}
 
   pre {
+    width: 1px; /* Why does this stop the textarea from going over 100% width? */
 		overflow: hidden;
   }
 	
