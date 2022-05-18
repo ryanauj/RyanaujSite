@@ -172,7 +172,7 @@
     ) => {
       let nameVal = name
       if (nameVal === null) {
-        nameVal = nameCount
+        nameVal = `${nameCount}`
         nameCount += 1
       }
       cy.add({
