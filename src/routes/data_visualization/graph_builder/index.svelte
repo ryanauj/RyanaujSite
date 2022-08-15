@@ -28,9 +28,9 @@
     'concentric',
     'breadthfirst',
     'cose',
-    'dagre',
     'cola',
-    'klay'
+    'klay',
+    'dagre'
   ]
   let selectedLayoutType = layoutTypes[layoutTypes.length-1]
 
