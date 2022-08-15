@@ -7,10 +7,10 @@
   // For some reason dagre is causing an error when compiled:
   // Cannot read properties of undefined (reading 'Graph')
   // Omitting for now.
-  /* import dagre from 'cytoscape-dagre' */
+  import dagre from 'cytoscape-dagre'
   import cola from 'cytoscape-cola'
   import klay from 'cytoscape-klay'
-  /* import elk from 'cytoscape-elk' */
+  import elk from 'cytoscape-elk'
   import { v4 as uuidv4 } from 'uuid'
 
   let cy
@@ -29,10 +29,10 @@
     'concentric',
     'breadthfirst',
     'cose',
-    /* 'dagre', */
+    'dagre',
     'cola',
     'klay',
-    /* 'elk' */
+    'elk'
   ]
   let selectedLayoutType = layoutTypes[layoutTypes.length-1]
 
@@ -107,10 +107,10 @@
 
   onMount(() => {
     console.log('onMount')
-    /* cytoscape.use(dagre) */
+    cytoscape.use(dagre)
     cytoscape.use(cola)
     cytoscape.use(klay)
-    /* cytoscape.use(elk) */
+    cytoscape.use(elk)
 
     cy = cytoscape({
       container: graph,
