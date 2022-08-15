@@ -10,7 +10,6 @@
   import dagre from 'cytoscape-dagre'
   import cola from 'cytoscape-cola'
   import klay from 'cytoscape-klay'
-  import elk from 'cytoscape-elk'
   import { v4 as uuidv4 } from 'uuid'
 
   let cy
@@ -29,10 +28,9 @@
     'concentric',
     'breadthfirst',
     'cose',
-    'dagre',
     'cola',
     'klay',
-    'elk'
+    'dagre'
   ]
   let selectedLayoutType = layoutTypes[layoutTypes.length-1]
 
@@ -110,7 +108,6 @@
     cytoscape.use(dagre)
     cytoscape.use(cola)
     cytoscape.use(klay)
-    cytoscape.use(elk)
 
     cy = cytoscape({
       container: graph,
